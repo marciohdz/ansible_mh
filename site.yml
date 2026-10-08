@@ -1,0 +1,38 @@
+---
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: Install updates (Rocky/Alma)
+    dnf:
+      update_only: yes
+      update_cache: yes
+    when: ansible_distribution in ['AlmaLinux', 'Rocky']
+
+  - name: Install updates (Debian)
+    apt:
+      upgrade: dist
+      update_cache: yes
+    when: ansible_distribution == "Debian"
+
+- hosts: web_servers
+  become: true
+  tasks:
+    
+  - name: Install Apache and PHP for Debian servers
+    apt:
+      name:
+        - apache2
+        - libapache2-mod-php
+      state: latest
+    when: ansible_distribution == "Debian"
+
+  - name: Install Apache and PHP for AlmaLinux and Rocky servers
+    dnf:
+      name:
+        - httpd
+        - php
+      state: latest
+    when: ansible_distribution in ['AlmaLinux', 'Rocky']
+

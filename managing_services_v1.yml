@@ -1,0 +1,118 @@
+---
+
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: Install updates (Rocky/Alma)
+    tags: always
+    dnf:
+      update_only: yes
+      update_cache: yes
+    when: ansible_distribution in ['AlmaLinux', 'Rocky']
+
+  - name: Install updates (Debian)
+    tags: always
+    apt:
+      upgrade: dist
+      update_cache: yes
+    when: ansible_distribution == "Debian"
+
+- hosts: workstations
+  become: true
+  tasks:
+  - name: install unzip
+    package:
+      name: unzip
+
+  - name: install terraform
+    unarchive:
+      src: https://releases.hashicorp.com/terraform/1.16.5/terraform_1.16.5_linux_amd64.zip
+      dest: /usr/local/bin
+      remote_src: yes
+      mode: 0755
+      owner: root
+      group: root
+    
+
+- hosts: web_servers
+  become: true
+  tasks:
+    
+  - name: Install Apache and PHP for Debian servers
+    tags: apache, apache2, Debian
+    apt:
+      name:
+        - apache2
+        - libapache2-mod-php
+      state: latest
+    when: ansible_distribution == "Debian"
+
+  - name: Install Apache and PHP for AlmaLinux and Rocky servers
+    tags: apache, httpd, AlmaLinux, Rocky
+    dnf:
+      name:
+        - httpd
+        - php
+      state: latest
+    when: ansible_distribution in ['AlmaLinux', 'Rocky']
+
+  - name: Start httpd service in AlmaLinux and Rocky
+    tags: apache, httpd, AlmaLinux, Rocky
+    service: 
+      name: httpd
+      state: started
+      enabled: yes
+    when: ansible_distribution in ['AlmaLinux', 'Rocky'] 
+
+  - name: change email address for admin
+    tags: apache, httpd, AlmaLinux, Rocky
+    lineinfile: 
+      path: /etc/httpd/conf/httpd.conf
+      regex: '^ServerAdmin'
+      line: ServerAdmin marciohdz@yahoo.com
+    when: ansible_distribution in ['AlmaLinux', 'Rocky']
+    register: httpd
+
+  - name: restart httpd en AlmaLinux y Rocky
+    tags: apache, httpd, AlmaLinux, Rocky
+    service:
+      name: httpd
+      state: restarted
+    when: httpd.changed
+
+  - name: Copy default html file for site
+    tags: apache,apache2,httpd
+    copy:
+      src: default_site.html
+      dest: /var/www/html/index.html
+      owner: root
+      group: root
+      mode: 0644
+
+- hosts: db_servers
+  become: true
+  tasks:
+  - name: Install Mariadb packages (Alma/Rocky)
+    tags: AlmaLinux, Rocky, db, mariadb
+    dnf:
+      name: mariadb
+      state: latest
+    when: ansible_distribution in ['AlmaLinux', 'Rocky']
+
+  - name: Install Mariadb packages (Debian)
+    tags: db, mariadb, Debian
+    apt:
+      name: mariadb-server
+      state: latest
+    when: ansible_distribution == "Debian"
+
+- hosts: file_servers
+  become: true
+  tasks:
+  - name: Install Samba package
+    tags: samba
+    package:
+      name: samba
+      state: latest
+

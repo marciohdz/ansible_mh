@@ -1,0 +1,50 @@
+- name: Install httpd package AlmaLinux y Rocky
+  tags: apache,centos,httpd
+  dnf:
+    name:
+      - httpd
+      - php
+    state: latest
+  when: ansible_distribution in ['AlmaLinux', 'Rocky']
+ 
+- name: Start and enable httpd (AlmaLinux, Rocky)
+  tags: apache,centos,httpd
+  service:
+    name: httpd
+    state: started
+    enabled: yes
+  when: ansible_distribution in ['AlmaLinux', 'Rocky']
+ 
+- name: Install apache2 package (Debian)
+  tags: apache,apache2,Debian
+  apt:
+    name:
+      - apache2
+      - libapache2-mod-php
+    state: latest
+  when: ansible_distribution == "Debian"
+ 
+- name: change e-mail address for admin
+  tags: apache,centos,httpd
+  lineinfile:
+    path: /etc/httpd/conf/httpd.conf
+    regexp: '^ServerAdmin'
+    line: ServerAdmin marciohdz
+  when: ansible_distribution in ['AlmaLinux', 'Rocky']
+  register: httpd
+ 
+- name: restart httpd (AlmaLinux, Rocky)
+  tags: apache,Rocky, AlmaLinux,httpd
+  service:
+    name: httpd
+    state: restarted
+  when: httpd.changed    
+ 
+- name: copy html file for site
+  tags: apache,apache,apache2,httpd
+  copy:
+    src: default_site.html
+    dest: /var/www/html/index.html
+    owner: root
+    group: root
+    mode: 0644

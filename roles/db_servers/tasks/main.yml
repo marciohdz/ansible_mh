@@ -1,0 +1,13 @@
+- name: Install Mariadb packages (Alma/Rocky)
+  tags: AlmaLinux, Rocky, db, mariadb
+  dnf:
+    name: mariadb
+    state: latest
+  when: ansible_distribution in ['AlmaLinux', 'Rocky']
+
+- name: Install Mariadb packages (Debian)
+  tags: db, mariadb, Debian
+  apt:
+    name: mariadb-server
+    state: latest
+  when: ansible_distribution == "Debian"
